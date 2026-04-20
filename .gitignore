@@ -17,6 +17,11 @@ Saved/
 .vs/
 *.user
 *.DotSettings.user
+.vsconfig
+
+# IDE
+.idea/
+.vscode/
 
 # OS
 Thumbs.db
