@@ -1,6 +1,6 @@
 # NBC_JangSik_Assignment7 — C++ 6DOF 드론 Pawn
 
-https://github.com/GoldBoll/NBC_JangSik_Assignment7/raw/master/docs/demo.mp4
+<video src="https://github.com/GoldBoll/NBC_JangSik_Assignment7/raw/master/docs/demo.mp4" controls width="100%"></video>
 
 언리얼 엔진 C++ 로 구현한 6자유도(6DOF) 드론 Pawn.  
 물리 중력, 착지 스냅, Enhanced Input 시스템을 직접 구현.
