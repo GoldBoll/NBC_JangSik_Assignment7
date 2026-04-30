@@ -85,7 +85,7 @@ void ANBC_AssignmentPawn::Tick(float DeltaTime)
 	// 액터 중심에서 박스 월드 바닥까지의 Z 거리 (기울기에 따라 변함)
 	const float BottomOffset = Location.Z - WorldBottom.Z;
 
-	if (bIsGrounded)
+ 	if (bIsGrounded)
 	{
 		// 착지 상태: 낙하 속도 초기화 + 바닥 위로 스냅
 		FallVelocity = 0.f;
@@ -106,18 +106,18 @@ void ANBC_AssignmentPawn::Tick(float DeltaTime)
 		}
 		else
 		{
-			// 공중: 중력 누적 후 다음 프레임 박스 바닥 위치를 예측해 바닥 뚫기 방지
+			// 공중: 중력 누적 후 이번 프레임 이동 경로 전체를 CCD trace — 어떤 속도에서도 바닥 뚫기 방지
 			FallVelocity += GravityZ * DeltaTime;
 			const float FallOffset = FallVelocity * DeltaTime;
 
-			// 예측 위치: 액터가 FallOffset 만큼 내려갔을 때의 박스 바닥
+			// 현재 바닥(WorldBottom) → 예측 바닥(PredictedBottom) 전 구간을 한 번에 검사
 			const FVector PredictedBottom = WorldBottom + FVector(0, 0, FallOffset);
 			FHitResult LandHit;
 			FCollisionQueryParams LandParams;
 			LandParams.AddIgnoredActor(this);
 
-			// 예측 바닥에서 1cm LineTrace — 충돌 시 이동 전에 스냅해서 바닥을 뚫지 않음
-			if (GetWorld()->LineTraceSingleByChannel(LandHit, PredictedBottom, PredictedBottom + FVector(0, 0, -1.f), ECC_Visibility, LandParams))
+			// CCD: 현재 바닥 3cm 위에서 예측 바닥 5cm 아래까지 — 경로 중간에 바닥이 있어도 감지
+			if (GetWorld()->LineTraceSingleByChannel(LandHit, WorldBottom + FVector(0, 0, 3.f), PredictedBottom + FVector(0, 0, -5.f), ECC_Visibility, LandParams))
 			{
 				FVector SnapLoc = Location;
 				SnapLoc.Z = LandHit.ImpactPoint.Z + BottomOffset;
@@ -136,7 +136,7 @@ void ANBC_AssignmentPawn::Tick(float DeltaTime)
 	}
 }
 
-// 박스 로컬 바닥을 월드 변환한 위치에서 1cm 아래로 LineTrace — 기울기와 무관하게 정확한 착지 감지
+// 박스 로컬 바닥 3cm 위에서 5cm 아래로 LineTrace — 바닥 표면과 동일 Z에서 시작 시 미감지 방지
 bool ANBC_AssignmentPawn::CheckGround(FHitResult& OutHit)
 {
 	const FVector WorldBottom = GetActorTransform().TransformPosition(FVector(0.f, 0.f, -BoxComp->GetScaledBoxExtent().Z));
@@ -144,8 +144,8 @@ bool ANBC_AssignmentPawn::CheckGround(FHitResult& OutHit)
 	Params.AddIgnoredActor(this);
 	return GetWorld()->LineTraceSingleByChannel(
 		OutHit,
-		WorldBottom,
-		WorldBottom + FVector(0, 0, -1.f),
+		WorldBottom + FVector(0, 0, 3.f),
+		WorldBottom + FVector(0, 0, -5.f),
 		ECC_Visibility,
 		Params);
 }
@@ -154,7 +154,7 @@ void ANBC_AssignmentPawn::MoveUp(const FInputActionValue& Value)
 {
 	const float V = Value.Get<float>();
 	// 착지 상태에서 하강 입력(Shift) 무시
-	if (bIsGrounded && V < 0.f) return;
+ 	if (bIsGrounded && V < 0.f) return;
 	if (V > 0.f) bAscending = true;
 	// GetActorUpVector()는 월드 공간 벡터이므로 AddActorWorldOffset으로 적용
 	AddActorWorldOffset(GetActorUpVector() * V * MoveSpeed * GetWorld()->GetDeltaSeconds(), true);
@@ -166,7 +166,7 @@ void ANBC_AssignmentPawn::Move(const FInputActionValue& Value)
 	const float DeltaTime = GetWorld()->GetDeltaSeconds();
 
 	// Yaw 기준 수평 이동 — Pitch 기울기 무관하게 카메라 방향으로 이동
-	const FRotator YawOnly = FRotator(0.f, GetActorRotation().Yaw, 0.f);
+ 	const FRotator YawOnly = FRotator(0.f, GetActorRotation().Yaw, 0.f);
 	const FVector Forward = FRotationMatrix(YawOnly).GetScaledAxis(EAxis::X);
 	const FVector Right   = FRotationMatrix(YawOnly).GetScaledAxis(EAxis::Y);
 
